@@ -73,6 +73,14 @@ solution_scores = solution_scores.fillna(5).astype(float)  # Varsayılan değeri
 # Çözüm önerileri puan tablosu başlığı
 st.subheader("Çözüm Önerileri Puanlama Tablosu")
 
+# Çözüm önerileri için puanlama tablosu
+solution_scores = pd.DataFrame(index=solutions, columns=criteria)
+solution_scores = solution_scores.fillna(5.0).astype(float)  # Varsayılan değeri 5.0 olarak belirle ve float türüne çevir
+
+# Çözüm Önerilerini Değerlendir ve Toplam Puan Hesapla
+solution_scores['Toplam Puan'] = solution_scores[criteria].dot(criteria_weights)
+
+
 # Tabloyu kullanıcı girişi için oluştur
 for i, solution in enumerate(solutions):
     for j, criterion in enumerate(criteria_short):
