@@ -10,7 +10,8 @@ criteria = ["Sustainability (A)", "Social Benefit (B)", "Less Carbon Emission (C
 
 # Açıklama
 st.write("Aşağıdaki çapraz tabloda, iki kriteri karşılaştırarak göreceli değerlerini belirleyebilirsiniz. "
-         "Çubuğun tam ortasında A=B bulunur, bu iki kriterin eşit değerliliğini ifade eder. Sağ veya sol tarafa kaydırarak değerleri artırabilirsiniz.")
+         "Çubuğun tam ortasında A=B bulunur, bu iki kriterin eşit değerliliğini ifade eder. "
+         "Sağa veya sola kaydırarak değerleri artırabilirsiniz.")
 
 # Karşılaştırma Matrisi
 comparison_matrix = pd.DataFrame(np.ones((len(criteria), len(criteria))), 
@@ -25,11 +26,22 @@ for i, row_criterion in enumerate(criteria):
 
             # Karşılaştırma çubuğu
             value = st.slider(
-                f"{row_criterion} vs {col_criterion}",
+                f"{row_criterion} ↔ {col_criterion}",
                 min_value=-4, max_value=4, value=0,
                 format="%d",
-                help="Sağa kaydırarak soldaki kriteri daha değerli yapabilirsiniz. Sola kaydırarak sağdaki kriteri daha değerli yapabilirsiniz."
+                help="Sağa kaydırarak soldaki kriteri daha değerli yapabilirsiniz. Sola kaydırarak sağdaki kriteri daha değerli yapabilirsiniz.",
+                label_visibility="collapsed"
             )
+
+            # Sol ve sağ tarafında kriter isimlerini göster
+            col1, col2, col3 = st.columns([1, 6, 1])
+            with col1:
+                st.write(row_criterion)  # Sol tarafta ilk kriter
+            with col2:
+                # Orta kısımda slider
+                st.slider("Değer Seçimi", -4, 4, value, format="%d", key=f"{row_criterion}_{col_criterion}")
+            with col3:
+                st.write(col_criterion)  # Sağ tarafta ikinci kriter
 
             # Değerleri matrise dönüştür
             if value == 0:
