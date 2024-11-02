@@ -1,57 +1,68 @@
 import streamlit as st
-import numpy as np
 import pandas as pd
+import numpy as np
 
 # Başlık
-st.title("Value Engineering Workshop Değerlendirme Formu")
+st.title("AHP Karar Destek Sistemi")
 
-# Kriter isimleri
-criteria_names = ["Sustainability", "Social Benefit", "Less Carbon Emission", "Efficiency"]
+# Kriterleri ve Çözüm Önerilerini tanımla
+criteria = ["Sustainability", "Social Benefit", "Less Carbon Emission", "Social Sustainability", 
+            "Efficiency", "Beeing Local", "Scaleability", "Nationally Aggrable", "Having Legislation in Law"]
+solutions = ["Planting Trees", "Kağıt Geri Dönüşümü", "Workshop on Forest Education", 
+             "Tree Distribution Events", "Wood as Building Material", "Fire Reporting System", 
+             "Investment in Wood Market", "Forest Sprinkler System"]
 
-# 1. Kriter Karşılaştırma Matrisi (AHP Ağırlıkları için)
-st.header("Kriter Önemi Karşılaştırması")
-criteria_comparison = np.ones((len(criteria_names), len(criteria_names)))
+# Kriter karşılaştırma matrisi için çapraz tablo
+st.subheader("Kriter Karşılaştırma Matrisi")
+comparison_matrix = pd.DataFrame(np.ones((len(criteria), len(criteria))), 
+                                 index=criteria, columns=criteria)
 
-# Kriterlerin birbirine göre önemini almak için bir döngüyle giriş oluşturuyoruz
-for i in range(len(criteria_names)):
-    for j in range(i + 1, len(criteria_names)):
-        criteria_comparison[i, j] = st.slider(f"{criteria_names[i]} / {criteria_names[j]} karşılaştırması:", 1, 9, 1)
-        criteria_comparison[j, i] = 1 / criteria_comparison[i, j]
+# Kullanıcıdan kriterleri karşılaştırmasını iste
+for i, row in enumerate(criteria):
+    for j, col in enumerate(criteria):
+        if i < j:
+            comparison_matrix.loc[row, col] = st.number_input(f"{row} ile {col} karşılaştırması", 
+                                                              min_value=0.0, value=1.0)
+            comparison_matrix.loc[col, row] = 1 / comparison_matrix.loc[row, col]
 
-# Kriter önem ağırlıkları hesaplama
-column_sums = criteria_comparison.sum(axis=0)
-normalized_matrix = criteria_comparison / column_sums
-criteria_weights = normalized_matrix.mean(axis=1)
-criteria_weights_df = pd.DataFrame(criteria_weights, index=criteria_names, columns=["Weight"])
-st.write("Kriter Ağırlıkları:\n", criteria_weights_df)
+# Ağırlıkları hesaplama
+st.write("Kriter Karşılaştırma Matrisi:")
+st.dataframe(comparison_matrix)
 
-# 2. Çözüm Önerileri ve Puanlamaları
-st.header("Çözüm Önerisi Değerlendirmesi")
-solution_names = [
-    "Planting Trees", "Paper Recycling", "Forest Education Workshop", 
-    "Tree Distribution Event", "Promote Wood Use"
-]
+def calculate_ahp_weights(matrix):
+    # Normalize matrisi
+    normalized_matrix = matrix / matrix.sum(axis=0)
+    # Her bir kriterin ağırlığını bul
+    weights = normalized_matrix.mean(axis=1)
+    return weights
 
-# Çözüm önerilerinin her kriter için puanlamalarını almak için bir DataFrame oluşturuyoruz
-solution_ratings = pd.DataFrame(index=criteria_names, columns=solution_names)
+criteria_weights = calculate_ahp_weights(comparison_matrix)
+st.write("Kriter Ağırlıkları:", criteria_weights)
 
-# Çözüm önerileri puanlamalarını kullanıcıdan alıyoruz
-for solution in solution_names:
-    st.subheader(f"{solution} Puanlama")
-    for criterion in criteria_names:
-        solution_ratings.loc[criterion, solution] = st.slider(
-            f"{solution} için {criterion} puanı:", 1, 5, 3
-        )
+# Çözüm önerileri için kriter puanları
+st.subheader("Çözüm Önerileri Puanlama")
 
-# Çözüm önerileri tablosunu göster
-st.write("Çözüm Önerileri Kriter Puanlaması:\n", solution_ratings)
+# Her çözüm önerisi için kriter puanlarını girme
+solution_scores = {}
+for solution in solutions:
+    scores = []
+    st.write(f"Çözüm: {solution}")
+    for criterion in criteria:
+        score = st.number_input(f"{solution} için {criterion} puanı", min_value=0.0, max_value=10.0, value=5.0)
+        scores.append(score)
+    solution_scores[solution] = scores
 
-# 3. Ağırlıklı Puanların Hesaplanması
-# Her çözüm önerisinin puanını kriter ağırlıklarıyla çarpıp toplam puanı hesaplıyoruz
-solution_ratings = solution_ratings.astype(float)  # Verileri sayısal formata dönüştürüyoruz
-weighted_scores = solution_ratings.T.dot(criteria_weights)
-weighted_scores = pd.DataFrame(weighted_scores, columns=["Total Score"])
+# Çözüm önerilerini değerlendirme
+st.subheader("Sonuçlar")
 
-# Çözüm önerilerini en yüksek puandan düşük puana sıralıyoruz
-ranked_solutions = weighted_scores.sort_values(by="Total Score", ascending=False)
-st.write("Sıralı Çözüm Önerileri ve Toplam Puanları:\n", ranked_solutions)
+# Çözüm önerilerini değerlendir ve toplam puanlarını hesapla
+solution_df = pd.DataFrame(solution_scores, index=criteria)
+solution_df = solution_df.T
+solution_df['Toplam Puan'] = solution_df.dot(criteria_weights)
+
+st.write("Çözüm Önerileri Puanları:")
+st.dataframe(solution_df[['Toplam Puan']])
+
+# En iyi çözüm önerisini göster
+best_solution = solution_df['Toplam Puan'].idxmax()
+st.write(f"En İyi Çözüm Önerisi: {best_solution}")
