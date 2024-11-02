@@ -22,18 +22,21 @@ st.subheader("Kriter Karşılaştırma Tablosu")
 for i, row_criterion in enumerate(criteria):
     for j, col_criterion in enumerate(criteria):
         if i < j:
+            st.write(f"{row_criterion} ile {col_criterion} karşılaştırması:")
+
             # Karşılaştırma çubuğu
+            value = st.slider(
+                f"{row_criterion} ↔ {col_criterion}",
+                min_value=-4, max_value=4, value=0,
+                format="%d",
+                help="Sağa kaydırarak soldaki kriteri daha değerli yapabilirsiniz. Sola kaydırarak sağdaki kriteri daha değerli yapabilirsiniz.",
+                label_visibility="collapsed"
+            )
+
+            # Sol ve sağ tarafında kriter isimlerini göster
             col1, col2, col3 = st.columns([1, 6, 1])
             with col1:
                 st.write(row_criterion)  # Sol tarafta ilk kriter
-            with col2:
-                value = st.slider(
-                    f"{row_criterion} ↔ {col_criterion}",
-                    min_value=-4, max_value=4, value=0,
-                    format="%d",
-                    help="Sağa kaydırarak soldaki kriteri daha değerli yapabilirsiniz. Sola kaydırarak sağdaki kriteri daha değerli yapabilirsiniz.",
-                    label_visibility="collapsed"
-                )
             with col3:
                 st.write(col_criterion)  # Sağ tarafta ikinci kriter
 
@@ -87,3 +90,4 @@ st.dataframe(solution_df[['Toplam Puan']])
 # En iyi çözüm önerisini göster
 best_solution = solution_df['Toplam Puan'].idxmax()
 st.write(f"En İyi Çözüm Önerisi: {best_solution}")
+
