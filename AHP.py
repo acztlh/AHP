@@ -5,30 +5,40 @@ import numpy as np
 # Başlık
 st.title("AHP Karar Destek Sistemi")
 
-# Kriterleri ve Çözüm Önerilerini tanımla
-criteria = ["Sustainability", "Social Benefit", "Less Carbon Emission", "Social Sustainability", 
-            "Efficiency", "Beeing Local", "Scaleability", "Nationally Aggrable", "Having Legislation in Law"]
-solutions = ["Planting Trees", "Kağıt Geri Dönüşümü", "Workshop on Forest Education", 
-             "Tree Distribution Events", "Wood as Building Material", "Fire Reporting System", 
-             "Investment in Wood Market", "Forest Sprinkler System"]
+# Kriterleri tanımla
+criteria = ["Sustainability (A)", "Social Benefit (B)", "Less Carbon Emission (C)", "Efficiency (D)"]
 
-# Kriter karşılaştırma matrisi için çapraz tablo
-st.subheader("Kriter Karşılaştırma Matrisi")
+# Karşılaştırma Tablosu Açıklaması
+st.write("Aşağıdaki çapraz tabloda, her iki kriterin göreli değerini belirleyebilirsiniz. "
+         "Örneğin, '4A' girişi, ilk kriterin (A) diğerine göre dört kat daha değerli olduğunu gösterir.")
+
+# Karşılaştırma Matrisi Oluştur
 comparison_matrix = pd.DataFrame(np.ones((len(criteria), len(criteria))), 
                                  index=criteria, columns=criteria)
 
-# Kullanıcıdan kriterleri karşılaştırmasını iste
-for i, row in enumerate(criteria):
-    for j, col in enumerate(criteria):
+# Kriter Karşılaştırma Tablosu Girdisi
+st.subheader("Kriter Karşılaştırma Tablosu")
+for i, row_criterion in enumerate(criteria):
+    for j, col_criterion in enumerate(criteria):
         if i < j:
-            comparison_matrix.loc[row, col] = st.number_input(f"{row} ile {col} karşılaştırması", 
-                                                              min_value=0.0, value=1.0)
-            comparison_matrix.loc[col, row] = 1 / comparison_matrix.loc[row, col]
+            st.write(f"{row_criterion} ile {col_criterion} karşılaştırması:")
+            value = st.radio(f"{row_criterion} mi {col_criterion} mi daha değerli?",
+                             ["Eşit (A=B)", f"{row_criterion}", f"2{row_criterion}", f"3{row_criterion}", f"4{row_criterion}",
+                              f"{col_criterion}", f"2{col_criterion}", f"3{col_criterion}", f"4{col_criterion}"],
+                             horizontal=True, index=0)
+            
+            # Kullanıcının seçimini matris değerine dönüştürme
+            if value == "Eşit (A=B)":
+                comparison_matrix.loc[row_criterion, col_criterion] = 1
+                comparison_matrix.loc[col_criterion, row_criterion] = 1
+            elif value.endswith("A") or value.endswith("B") or value.endswith("C") or value.endswith("D"):
+                comparison_matrix.loc[row_criterion, col_criterion] = int(value[0])
+                comparison_matrix.loc[col_criterion, row_criterion] = 1 / int(value[0])
+            else:
+                comparison_matrix.loc[row_criterion, col_criterion] = 1
+                comparison_matrix.loc[col_criterion, row_criterion] = 1
 
-# Ağırlıkları hesaplama
-st.write("Kriter Karşılaştırma Matrisi:")
-st.dataframe(comparison_matrix)
-
+# Ağırlıkları hesaplama fonksiyonu
 def calculate_ahp_weights(matrix):
     # Normalize matrisi
     normalized_matrix = matrix / matrix.sum(axis=0)
@@ -36,13 +46,18 @@ def calculate_ahp_weights(matrix):
     weights = normalized_matrix.mean(axis=1)
     return weights
 
+# Ağırlık Hesaplama ve Gösterme
 criteria_weights = calculate_ahp_weights(comparison_matrix)
-st.write("Kriter Ağırlıkları:", criteria_weights)
+st.subheader("Kriter Ağırlıkları")
+st.write(criteria_weights)
 
-# Çözüm önerileri için kriter puanları
+# Örnek çözümler ve çözüm puanlamaları
+solutions = ["Planting Trees", "Kağıt Geri Dönüşümü", "Workshop on Forest Education", 
+             "Tree Distribution Events", "Wood as Building Material", "Fire Reporting System", 
+             "Investment in Wood Market", "Forest Sprinkler System"]
+
+# Çözüm Önerileri için Puanlama Girdisi
 st.subheader("Çözüm Önerileri Puanlama")
-
-# Her çözüm önerisi için kriter puanlarını girme
 solution_scores = {}
 for solution in solutions:
     scores = []
@@ -52,10 +67,8 @@ for solution in solutions:
         scores.append(score)
     solution_scores[solution] = scores
 
-# Çözüm önerilerini değerlendirme
-st.subheader("Sonuçlar")
-
 # Çözüm önerilerini değerlendir ve toplam puanlarını hesapla
+st.subheader("Sonuçlar")
 solution_df = pd.DataFrame(solution_scores, index=criteria)
 solution_df = solution_df.T
 solution_df['Toplam Puan'] = solution_df.dot(criteria_weights)
