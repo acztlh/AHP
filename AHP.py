@@ -88,19 +88,21 @@ solution_df = pd.DataFrame(solution_scores, index=criteria)
 solution_df = solution_df.T
 solution_df['Toplam Puan'] = solution_df.dot(criteria_weights)
 
-# Katılımcı Sonuçlarını Kaydet ve Görüntüle
+# Katılımcının En Yüksek Puanlı Çözüm Önerisini Bul
 if user_name:
-    st.session_state['participants'][user_name] = solution_df['Toplam Puan']
+    max_solution = solution_df['Toplam Puan'].idxmax()
+    max_score = solution_df['Toplam Puan'].max()
+    st.session_state['participants'][user_name] = (max_solution, max_score)
 
-# Katılımcı Sonuçları Tablosu
+# Katılımcıların En Yüksek Puanlı Çözüm Önerilerini Göster
 st.subheader("Katılımcı Sonuçları")
-for participant, results in st.session_state['participants'].items():
-    st.write(f"{participant} Sonuçları:")
-    st.write(results)
+results = pd.DataFrame(st.session_state['participants'].items(), columns=['Katılımcı', 'Sonuç'])
+results[['Çözüm Önerisi', 'Puan']] = pd.DataFrame(results['Sonuç'].tolist(), index=results.index)
+results = results.drop(columns=['Sonuç'])
+st.write(results)
 
-# Ortalama Sonuçları Hesapla ve Göster
-if len(st.session_state['participants']) > 0:
-    all_scores = pd.DataFrame(st.session_state['participants']).T
-    all_scores['Ortalama Sonuç'] = all_scores.mean(axis=1)
-    st.subheader("Tüm Katılımcıların Ortalama Sonuçları")
-    st.write(all_scores[['Ortalama Sonuç']])
+# Tüm Katılımcıların Ortalama En Yüksek Puanını Hesapla ve Göster
+if not results.empty:
+    average_score = results['Puan'].mean()
+    st.subheader("Tüm Katılımcıların Ortalama En Yüksek Puanı")
+    st.write(f"Ortalama Puan: {average_score:.2f}")
