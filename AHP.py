@@ -68,7 +68,7 @@ criteria_weights = calculate_ahp_weights(comparison_matrix)
 
 # Boş DataFrame oluştur ve çözüm önerileri ile kriterleri ekle
 solution_scores = pd.DataFrame(index=solutions, columns=criteria_short)
-solution_scores = solution_scores.fillna(5)  # Varsayılan değeri 5 olarak belirle
+solution_scores = solution_scores.fillna(5).astype(float)  # Varsayılan değeri 5 olarak belirle ve float türüne çevir
 
 # Çözüm önerileri puan tablosu başlığı
 st.subheader("Çözüm Önerileri Puanlama Tablosu")
@@ -102,3 +102,4 @@ st.subheader("Katılımcıların En Yüksek Puan Verdiği Çözüm Önerileri")
 results = pd.DataFrame([(name, data[1], data[2]) for name, data in st.session_state['participants'].items()],
                        columns=['Katılımcı', 'En İyi Çözüm Önerisi', 'Puan'])
 st.write(results)
+
