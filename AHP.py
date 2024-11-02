@@ -37,9 +37,6 @@ for i, row_criterion in enumerate(criteria):
             col1, col2, col3 = st.columns([1, 6, 1])
             with col1:
                 st.write(row_criterion)  # Sol tarafta ilk kriter
-            with col2:
-                # Orta kısımda slider
-                st.slider("Değer Seçimi", -4, 4, value, format="%d", key=f"{row_criterion}_{col_criterion}")
             with col3:
                 st.write(col_criterion)  # Sağ tarafta ikinci kriter
 
