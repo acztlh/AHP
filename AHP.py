@@ -106,3 +106,19 @@ if not results.empty:
     average_score = results['Puan'].mean()
     st.subheader("Tüm Katılımcıların Ortalama En Yüksek Puanı")
     st.write(f"Ortalama Puan: {average_score:.2f}")
+# Katılımcıların En Yüksek Puanlı Çözüm Önerilerini Göster
+st.subheader("Katılımcı Sonuçları")
+
+# 'participants' sözlüğünü DataFrame'e dönüştürerek her katılımcının sonucunu göster
+results = pd.DataFrame(st.session_state['participants'].items(), columns=['Katılımcı', 'Sonuç'])
+
+# 'Sonuç' sütununun her kaydının iki elemanlı (çözüm önerisi, puan) olup olmadığını kontrol et
+try:
+    results[['Çözüm Önerisi', 'Puan']] = pd.DataFrame(results['Sonuç'].tolist(), index=results.index)
+    results = results.drop(columns=['Sonuç'])  # Artık 'Sonuç' sütununu kaldırabiliriz
+except ValueError:
+    st.error("Hata: 'Sonuç' sütunundaki her değer (çözüm önerisi, puan) şeklinde olmalıdır.")
+    st.stop()  # Eğer hata varsa, uygulamayı durdur
+
+# Tüm katılımcı sonuçlarını tablo olarak göster
+st.write(results)
