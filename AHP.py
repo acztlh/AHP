@@ -77,8 +77,11 @@ st.subheader("Çözüm Önerileri Puanlama Tablosu")
 solution_scores = pd.DataFrame(index=solutions, columns=criteria)
 solution_scores = solution_scores.fillna(5.0).astype(float)  # Varsayılan değeri 5.0 olarak belirle ve float türüne çevir
 
-# Çözüm Önerilerini Değerlendir ve Toplam Puan Hesapla
-solution_scores['Toplam Puan'] = solution_scores[criteria].dot(criteria_weights)
+# Kriter ağırlıklarını DataFrame formatına çevirerek çözüm önerileri ile hizalayın
+criteria_weights_df = pd.DataFrame(criteria_weights, index=criteria, columns=["Ağırlık"])
+
+# Çözüm önerilerini değerlendirin ve toplam puanı hesaplayın
+solution_scores['Toplam Puan'] = solution_scores.dot(criteria_weights_df['Ağırlık'])
 
 
 # Tabloyu kullanıcı girişi için oluştur
