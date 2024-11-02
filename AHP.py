@@ -26,63 +26,15 @@ if 'participants' not in st.session_state:
     st.session_state['participants'] = {}
 
 # Açıklama
-st.write("Aşağıda kriterlerin karşılaştırmalarını yaparak göreceli değerlerini belirleyebilirsiniz. "
-         "Daha sonra çözüm önerilerini 10 üzerinden değerlendirerek puanlayacaksınız.")
-
-# Karşılaştırma Matrisi
-comparison_matrix = pd.DataFrame(np.ones((len(criteria), len(criteria))), index=criteria, columns=criteria)
-
-# AHP Çubuk Karşılaştırma
-st.subheader("Kriter Karşılaştırma Tablosu")
-for i, row_criterion in enumerate(criteria):
-    for j, col_criterion in enumerate(criteria):
-        if i < j:
-            st.write(f"{row_criterion} ile {col_criterion} karşılaştırması:")
-            # Karşılaştırma çubuğu
-            value = st.slider(
-                f"{row_criterion} ↔ {col_criterion}",
-                min_value=-4, max_value=4, value=0,
-                format="%d",
-                help="Sağa kaydırarak soldaki kriteri daha değerli yapabilirsiniz. Sola kaydırarak sağdaki kriteri daha değerli yapabilirsiniz.",
-                label_visibility="collapsed"
-            )
-            # Değerleri matrise dönüştür
-            if value == 0:
-                comparison_matrix.loc[row_criterion, col_criterion] = 1
-                comparison_matrix.loc[col_criterion, row_criterion] = 1
-            elif value > 0:
-                comparison_matrix.loc[row_criterion, col_criterion] = value
-                comparison_matrix.loc[col_criterion, row_criterion] = 1 / value
-            else:
-                comparison_matrix.loc[row_criterion, col_criterion] = 1 / abs(value)
-                comparison_matrix.loc[col_criterion, row_criterion] = abs(value)
-
-# Ağırlık Hesaplama Fonksiyonu
-def calculate_ahp_weights(matrix):
-    normalized_matrix = matrix / matrix.sum(axis=0)
-    weights = normalized_matrix.mean(axis=1)
-    return weights
-
-# Kriter Ağırlıkları Hesapla
-criteria_weights = calculate_ahp_weights(comparison_matrix)
+st.write("Aşağıda çözüm önerilerini 10 üzerinden değerlendirerek puanlayın. "
+         "Kriter başlıkları yalnızca harf olarak gösterilmektedir.")
 
 # Boş DataFrame oluştur ve çözüm önerileri ile kriterleri ekle
 solution_scores = pd.DataFrame(index=solutions, columns=criteria_short)
-solution_scores = solution_scores.fillna(5).astype(float)  # Varsayılan değeri 5 olarak belirle ve float türüne çevir
+solution_scores = solution_scores.fillna(5)  # Varsayılan değeri 5 olarak belirle
 
 # Çözüm önerileri puan tablosu başlığı
 st.subheader("Çözüm Önerileri Puanlama Tablosu")
-
-# Çözüm önerileri için puanlama tablosu
-solution_scores = pd.DataFrame(index=solutions, columns=criteria)
-solution_scores = solution_scores.fillna(5.0).astype(float)  # Varsayılan değeri 5.0 olarak belirle ve float türüne çevir
-
-# Kriter ağırlıklarını DataFrame formatına çevirerek çözüm önerileri ile hizalayın
-criteria_weights_df = pd.DataFrame(criteria_weights, index=criteria, columns=["Ağırlık"])
-
-# Çözüm önerilerini değerlendirin ve toplam puanı hesaplayın
-solution_scores['Toplam Puan'] = solution_scores.dot(criteria_weights_df['Ağırlık'])
-
 
 # Tabloyu kullanıcı girişi için oluştur
 for i, solution in enumerate(solutions):
@@ -91,6 +43,16 @@ for i, solution in enumerate(solutions):
                                 min_value=0.0, max_value=10.0, value=solution_scores.iloc[i, j],
                                 key=f"{solution}_{criterion}")
         solution_scores.loc[solution, criterion] = score
+
+# Ağırlık Hesaplama Fonksiyonu
+def calculate_ahp_weights(matrix):
+    normalized_matrix = matrix / matrix.sum(axis=0)
+    weights = normalized_matrix.mean(axis=1)
+    return weights
+
+# Kriter Karşılaştırma Matrisi ve Kriter Ağırlıkları
+comparison_matrix = pd.DataFrame(np.ones((len(criteria), len(criteria))), index=criteria, columns=criteria)
+criteria_weights = calculate_ahp_weights(comparison_matrix)
 
 # Toplam puanları kriter ağırlıklarıyla çarp ve her çözüm için toplam puanı hesapla
 solution_scores = solution_scores.astype(float)  # Puanları float'a dönüştür
@@ -113,4 +75,3 @@ st.subheader("Katılımcıların En Yüksek Puan Verdiği Çözüm Önerileri")
 results = pd.DataFrame([(name, data[1], data[2]) for name, data in st.session_state['participants'].items()],
                        columns=['Katılımcı', 'En İyi Çözüm Önerisi', 'Puan'])
 st.write(results)
-
