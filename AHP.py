@@ -14,54 +14,33 @@ criteria = [
     "Social Sustainability", "Efficiency", "Being Local", 
     "Scalability", "Nationally Agreeable", "Having Legislation in the Law"
 ]
+criteria_labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
 solutions = [
     "Planting Trees", "Kağıt Geri Dönüşümü", "Workshop on Forest Education", 
     "Tree Distribution Events", "Wood as Building Material", 
     "Fire Reporting System", "Investment in Wood Market", "Forest Sprinkler System"
 ]
 
-# Katılımcı verilerini saklamak için sözlük
+# Katılımcı verilerini saklamak için session_state içinde bir sözlük
 if 'participants' not in st.session_state:
     st.session_state['participants'] = {}
 
-# Açıklama
-st.write("Aşağıdaki çapraz tabloda, iki kriteri karşılaştırarak göreceli değerlerini belirleyebilirsiniz. "
-         "Çubuğun tam ortasında A=B bulunur, bu iki kriterin eşit değerliliğini ifade eder. "
-         "Sağa veya sola kaydırarak değerleri artırabilirsiniz.")
+# Uyarı mesajı
+st.write("Değerlendirme 10 puan üzerinden yapılmaktadır.")
 
-# Karşılaştırma Matrisi
-comparison_matrix = pd.DataFrame(np.ones((len(criteria), len(criteria))), index=criteria, columns=criteria)
+# Çözüm Önerileri için Puanlama Tablosu
+st.subheader("Çözüm Önerileri Puanlama")
+solution_scores = {solution: [5.0] * len(criteria) for solution in solutions}  # Varsayılan değerler 5.0
 
-# AHP Çubuk Karşılaştırma
-st.subheader("Kriter Karşılaştırma Tablosu")
-for i, row_criterion in enumerate(criteria):
-    for j, col_criterion in enumerate(criteria):
-        if i < j:
-            st.write(f"{row_criterion} ile {col_criterion} karşılaştırması:")
-            # Karşılaştırma çubuğu
-            value = st.slider(
-                f"{row_criterion} ↔ {col_criterion}",
-                min_value=-4, max_value=4, value=0,
-                format="%d",
-                help="Sağa kaydırarak soldaki kriteri daha değerli yapabilirsiniz. Sola kaydırarak sağdaki kriteri daha değerli yapabilirsiniz.",
-                label_visibility="collapsed"
-            )
-            # Sol ve sağ tarafında kriter isimlerini göster
-            col1, col2, col3 = st.columns([1, 6, 1])
-            with col1:
-                st.write(row_criterion)
-            with col3:
-                st.write(col_criterion)
-            # Değerleri matrise dönüştür
-            if value == 0:
-                comparison_matrix.loc[row_criterion, col_criterion] = 1
-                comparison_matrix.loc[col_criterion, row_criterion] = 1
-            elif value > 0:
-                comparison_matrix.loc[row_criterion, col_criterion] = value
-                comparison_matrix.loc[col_criterion, row_criterion] = 1 / value
-            else:
-                comparison_matrix.loc[row_criterion, col_criterion] = 1 / abs(value)
-                comparison_matrix.loc[col_criterion, row_criterion] = abs(value)
+# Puanlama tablosu
+scoring_df = pd.DataFrame(solution_scores, index=criteria_labels)
+
+for criterion_label, criterion_name in zip(criteria_labels, criteria):
+    for solution in solutions:
+        scoring_df.loc[criterion_label, solution] = st.number_input(
+            f"{solution} için {criterion_name} ({criterion_label}) puanı", 
+            min_value=0.0, max_value=10.0, value=5.0
+        )
 
 # Ağırlık Hesaplama Fonksiyonu
 def calculate_ahp_weights(matrix):
@@ -69,36 +48,33 @@ def calculate_ahp_weights(matrix):
     weights = normalized_matrix.mean(axis=1)
     return weights
 
-# Kriter Ağırlıkları Hesapla
+# Karşılaştırma Matrisi ile kriter ağırlıklarını hesaplayın
+comparison_matrix = pd.DataFrame(np.ones((len(criteria), len(criteria))), index=criteria, columns=criteria)
 criteria_weights = calculate_ahp_weights(comparison_matrix)
 
-# Çözüm Önerileri için Puanlama Girdisi
-st.subheader("Çözüm Önerileri Puanlama")
-solution_scores = {}
-for solution in solutions:
-    scores = []
-    st.write(f"Çözüm: {solution}")
-    for criterion in criteria:
-        score = st.number_input(f"{solution} için {criterion} puanı", min_value=0.0, max_value=10.0, value=5.0)
-        scores.append(score)
-    solution_scores[solution] = scores
-
-# Çözüm Önerilerini Değerlendir ve Toplam Puan Hesapla
-solution_df = pd.DataFrame(solution_scores, index=criteria)
-solution_df = solution_df.T
+# Çözüm Önerileri Puanlamasını ve Toplam Puanları Hesapla
+solution_df = scoring_df.T
 solution_df['Toplam Puan'] = solution_df.dot(criteria_weights)
 
 # Katılımcının En Yüksek Puanlı Çözüm Önerisini Bul
 if user_name:
     max_solution = solution_df['Toplam Puan'].idxmax()
     max_score = solution_df['Toplam Puan'].max()
-    st.session_state['participants'][user_name] = (max_solution, max_score)
+    st.session_state['participants'][user_name] = (max_solution, max_score, solution_df)
+
+# Katılımcıların Tüm Çözüm Önerilerini Göster
+st.subheader("Katılımcıların Tüm Çözüm Önerileri Puanları")
+for participant, data in st.session_state['participants'].items():
+    solution_table = data[2]
+    st.write(f"{participant} için Çözüm Önerileri Puanları:")
+    st.write(solution_table)
 
 # Katılımcıların En Yüksek Puanlı Çözüm Önerilerini Göster
-st.subheader("Katılımcı Sonuçları")
-results = pd.DataFrame(st.session_state['participants'].items(), columns=['Katılımcı', 'Sonuç'])
-results[['Çözüm Önerisi', 'Puan']] = pd.DataFrame(results['Sonuç'].tolist(), index=results.index)
-results = results.drop(columns=['Sonuç'])
+st.subheader("Katılımcıların En Yüksek Puanlı Çözüm Önerileri")
+results = pd.DataFrame(
+    [(participant, data[0], data[1]) for participant, data in st.session_state['participants'].items()],
+    columns=['Katılımcı', 'En Yüksek Çözüm Önerisi', 'Puan']
+)
 st.write(results)
 
 # Tüm Katılımcıların Ortalama En Yüksek Puanını Hesapla ve Göster
